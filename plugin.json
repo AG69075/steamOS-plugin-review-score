@@ -1,9 +1,15 @@
 {
-  "name": "decky-steam-reviews",
-  "author": "TonPseudo",
+  "name": "steam-reviews",
+  "author": "bloodshine",
   "flags": [],
+  "api_version": 2,
   "publish": {
-    "tags": ["reviews", "steam", "library"],
-    "description": "Displays the Steam Review score on game detail pages."
+    "tags": [
+      "steam",
+      "reviews",
+      "scores"
+    ],
+    "description": "Display Steam user review scores directly on your library pages.",
+    "image": "https://images.steamusercontent.com/ugc/12628921612687895720/62D2DA8FF0F13E28B5B3A24B200BE3236D316D35/?imw=5000&imh=5000&ima=fit&impolicy=Letterbox&imcolor=%23000000&letterbox=false"
   }
 }
