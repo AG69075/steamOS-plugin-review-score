@@ -1,5 +1,8 @@
 # decky-steam-reviews
 [Decky Loader](https://decky.xyz/) plugin for Steam Deck that displays the Steam review score (e.g. "Very Positive", "Mixed") directly on each game's page in the library.
+
+![description](images/plugin_steam_review.png)
+
 ## Features
 - Fetches the all-time score and the recent score (last 30 days) via the public Steam API
 - Computes a readable label ("Overwhelmingly Positive", "Mixed", ...) even when Steam doesn't provide one
