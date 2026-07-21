@@ -1,4 +1,4 @@
-# decky-steam-reviews
+# Steam Review
 [Decky Loader](https://decky.xyz/) plugin for Steam Deck that displays the Steam review score (e.g. "Very Positive", "Mixed") directly on each game's page in the library.
 
 ![description](images/plugin_steam_review.png)
