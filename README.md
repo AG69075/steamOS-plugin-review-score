@@ -1,49 +1,35 @@
 # decky-steam-reviews
-
-Plugin [Decky Loader](https://decky.xyz/) pour Steam Deck qui affiche le score d'évaluation Steam (ex: "Very Positive", "Mixed") directement sur la fiche de chaque jeu dans la bibliothèque.
-
-## Fonctionnalités
-
-- Récupère le score global (all-time) et le score récent (30 derniers jours) via l'API publique Steam
-- Calcule un label lisible ("Overwhelmingly Positive", "Mixed", ...) même si Steam ne le fournit pas
-- Cache en mémoire (6h) pour limiter les appels réseau
-- Lien direct vers la page reviews du jeu sur le store Steam
-
+[Decky Loader](https://decky.xyz/) plugin for Steam Deck that displays the Steam review score (e.g. "Very Positive", "Mixed") directly on each game's page in the library.
+## Features
+- Fetches the all-time score and the recent score (last 30 days) via the public Steam API
+- Computes a readable label ("Overwhelmingly Positive", "Mixed", ...) even when Steam doesn't provide one
+- In-memory cache (6h) to limit network calls
+- Direct link to the game's reviews page on the Steam store
 ## Installation
-
-1. Copier ce dossier dans `/home/deck/homebrew/plugins/decky-steam-reviews`
-2. Installer les dépendances et builder le frontend :
+1. Copy this folder into `/home/deck/homebrew/plugins/decky-steam-reviews`
+2. Install dependencies and build the frontend:
    ```bash
    pnpm install
    pnpm run build
    ```
-3. Redémarrer Decky :
+3. Restart Decky:
    ```bash
    sudo systemctl restart plugin_loader
    ```
-
-## Structure du projet
-
-| Fichier | Rôle |
+## Project structure
+| File | Role |
 |---|---|
-| `main.py` | Backend Python — appel API Steam, cache, calcul du label |
-| `plugin.json` | Métadonnées du plugin (nom, tags, description) |
-| `package.json` | Dépendances et scripts de build (frontend à ajouter) |
-
-> Le frontend (React/TS, dossier `src/`) n'est pas encore présent dans le repo à date.
-
-## API utilisée
-
+| `main.py` | Python backend — Steam API calls, caching, label computation |
+| `plugin.json` | Plugin metadata (name, tags, description) |
+| `package.json` | Dependencies and build scripts (frontend to be added) |
+> The frontend (React/TS, `src/` folder) is not yet present in the repo as of this writing.
+## API used
 ```
 https://store.steampowered.com/appreviews/<app_id>?json=1&language=all&review_type=all&purchase_type=all
 ```
-
-Champs exploités : `query_summary.total_positive`, `total_reviews`, `total_negative`, `review_score_desc`.
-
-## Méthode `get_steam_reviews(appid)`
-
-Retourne un objet :
-
+Fields used: `query_summary.total_positive`, `total_reviews`, `total_negative`, `review_score_desc`.
+## `get_steam_reviews(appid)` method
+Returns an object:
 ```json
 {
   "found": true,
@@ -59,7 +45,5 @@ Retourne un objet :
   "store_url": "https://store.steampowered.com/app/730/#app_reviews_hash"
 }
 ```
-
-## Licence
-
+## License
 GPL-2.0-or-later
