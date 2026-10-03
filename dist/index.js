@@ -339,23 +339,49 @@ const queryRecentReviews = async (appid) => {
         clearTimeout(timer);
     }
 };
+const getJson = async (url, signal) => {
+    const resp = await fetchNoCors(url, {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        signal,
+    });
+    if (!resp.ok)
+        throw new Error(`Steam API error (${resp.status})`);
+    return resp.json();
+};
+// Official IUserReviewsService/GetAppReviews (works without an API key). Notes:
+// `languages` must be ["all"] (default is English only, which gives wrong
+// totals), `num_per_page` is clamped to >= 1, and unknown appids come back as
+// an empty `response` object rather than a failure flag.
+const fetchReviewSummaryV1 = async (appid, signal) => {
+    const input = encodeURIComponent(JSON.stringify({ filter: "all", languages: ["all"], num_per_page: 1 }));
+    const payload = await getJson(`https://api.steampowered.com/IUserReviewsService/GetAppReviews/v1/?appid=${appid}&input_json=${input}`, signal);
+    return payload?.response?.query_summary;
+};
+// Legacy endpoint, deprecated by Valve — kept only as a fallback.
+const fetchReviewSummaryLegacy = async (appid, signal) => {
+    const payload = await getJson(`https://store.steampowered.com/appreviews/${appid}?json=1&filter=all&review_type=all&purchase_type=all&language=all&num_per_page=0`, signal);
+    return payload?.success === 1 ? (payload.query_summary ?? {}) : undefined;
+};
+const fetchReviewSummary = async (appid, signal) => {
+    try {
+        const qs = await fetchReviewSummaryV1(appid, signal);
+        if (qs)
+            return qs;
+    }
+    catch (err) {
+        if (err instanceof Error && err.name === "AbortError")
+            throw err;
+    }
+    return fetchReviewSummaryLegacy(appid, signal);
+};
 const querySteamReviews = async (appid) => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     try {
-        // Single call — language=all returns correct all-time totals
-        const url = `https://store.steampowered.com/appreviews/${appid}?json=1&filter=all&review_type=all&purchase_type=all&language=all&num_per_page=0`;
-        const resp = await fetchNoCors(url, {
-            method: "GET",
-            headers: { Accept: "application/json" },
-            signal: controller.signal,
-        });
-        if (!resp.ok)
-            throw new Error(`Steam API error (${resp.status})`);
-        const payload = await resp.json();
-        if (payload?.success !== 1)
+        const qs = await fetchReviewSummary(appid, controller.signal);
+        if (!qs)
             return { found: false, error: "Steam API returned failure" };
-        const qs = payload.query_summary ?? {};
         const totalPositive = qs.total_positive ?? 0;
         const totalReviews = qs.total_reviews ?? 0;
         const totalNegative = qs.total_negative ?? 0;
