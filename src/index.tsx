@@ -131,9 +131,43 @@ const SettingsPanel = () => {
 
 // ─── Game Overview Hook ───────────────────────────────────────────────────────
 
-const useParams = Object.values(ReactRouter).find((val) =>
-  /return (\w)\?\1\.params:{}/.test(`${val}`)
-) as () => { appid?: string };
+// Steam's minified react-router changes between client updates, so locate
+// useParams defensively: named export, known minified shapes, then a fallback
+// that derives the appid from the current location.
+const findUseParams = (): (() => { appid?: string }) => {
+  const router = ReactRouter as any;
+  if (typeof router.useParams === "function") return router.useParams;
+
+  const fns = Object.values(router).filter((v) => typeof v === "function") as Function[];
+  const patterns = [
+    /return (\w)\?\1\.params:{}/,
+    /\.params\s*:\s*\{\}/,
+    /\.match\.params/,
+  ];
+  for (const re of patterns) {
+    const found = fns.find((fn) => {
+      try {
+        return re.test(`${fn}`) && fn.length === 0;
+      } catch (_e) {
+        return false;
+      }
+    });
+    if (found) return found as () => { appid?: string };
+  }
+
+  return () => {
+    const useLocation =
+      typeof router.useLocation === "function" ? router.useLocation : undefined;
+    const pathname: string =
+      (useLocation ? useLocation()?.pathname : undefined) ??
+      (typeof window !== "undefined" ? window.location?.pathname : "") ??
+      "";
+    const m = /\/library\/app\/(\d+)/.exec(pathname);
+    return { appid: m?.[1] };
+  };
+};
+
+const useParams = findUseParams();
 
 const useGameOverview = () => {
   const { appid } = useParams();

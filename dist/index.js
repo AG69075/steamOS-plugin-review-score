@@ -165,7 +165,41 @@ const SettingsPanel = () => {
             SP_REACT.createElement(DFL.SliderField, { label: "Vertical offset", value: settings.verticalOffset, min: 0, max: 300, step: 4, onChange: (val) => setSetting({ verticalOffset: val }) }))));
 };
 // ─── Game Overview Hook ───────────────────────────────────────────────────────
-const useParams = Object.values(DFL.ReactRouter).find((val) => /return (\w)\?\1\.params:{}/.test(`${val}`));
+// Steam's minified react-router changes between client updates, so locate
+// useParams defensively: named export, known minified shapes, then a fallback
+// that derives the appid from the current location.
+const findUseParams = () => {
+    const router = DFL.ReactRouter;
+    if (typeof router.useParams === "function")
+        return router.useParams;
+    const fns = Object.values(router).filter((v) => typeof v === "function");
+    const patterns = [
+        /return (\w)\?\1\.params:{}/,
+        /\.params\s*:\s*\{\}/,
+        /\.match\.params/,
+    ];
+    for (const re of patterns) {
+        const found = fns.find((fn) => {
+            try {
+                return re.test(`${fn}`) && fn.length === 0;
+            }
+            catch (_e) {
+                return false;
+            }
+        });
+        if (found)
+            return found;
+    }
+    return () => {
+        const useLocation = typeof router.useLocation === "function" ? router.useLocation : undefined;
+        const pathname = (useLocation ? useLocation()?.pathname : undefined) ??
+            (typeof window !== "undefined" ? window.location?.pathname : "") ??
+            "";
+        const m = /\/library\/app\/(\d+)/.exec(pathname);
+        return { appid: m?.[1] };
+    };
+};
+const useParams = findUseParams();
 const useGameOverview = () => {
     const { appid } = useParams();
     const [overview, setOverview] = SP_REACT.useState();
