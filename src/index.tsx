@@ -363,7 +363,14 @@ const getJson = async (url: string, signal: AbortSignal) => {
     signal,
   } as RequestInit);
   if (!resp.ok) throw new Error(`Steam API error (${resp.status})`);
-  return resp.json();
+  // Unknown games can come back as an empty/HTML body — treat as "no data"
+  // instead of throwing "Unexpected token ...".
+  const text = await resp.text();
+  try {
+    return JSON.parse(text);
+  } catch (_err) {
+    return undefined;
+  }
 };
 
 // Official IUserReviewsService/GetAppReviews (works without an API key). Notes:
@@ -661,6 +668,9 @@ const SteamReviewsBadge = () => {
   if (!numericAppid || Number.isNaN(numericAppid)) return <></>;
   if (isLaunching) return <></>;
 
+  // No Steam reviews (not found, error, or zero reviews) -> render nothing at all.
+  if (!loading && (error || !data?.found || !data.all_reviews_total)) return <></>;
+
   const renderScores = () => {
     if (loading)
       return (
@@ -671,16 +681,8 @@ const SteamReviewsBadge = () => {
         </div>
       );
 
-    if (error)
-      return (
-        <div className="steamrev-scores">
-          <div className="steamrev-score-row">
-            <span className="steamrev-row-label">⚠️ {error}</span>
-          </div>
-        </div>
-      );
-
-    if (!data?.found) return null;
+    // No Steam reviews (not found, error, or zero reviews) -> display nothing.
+    if (error || !data?.found || !data.all_reviews_total) return null;
 
     const allCount = data.all_reviews_total?.toLocaleString() ?? "0";
     const recentCount = data.recent_reviews_total?.toLocaleString();
