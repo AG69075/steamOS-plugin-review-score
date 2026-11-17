@@ -381,7 +381,15 @@ const getJson = async (url, signal) => {
     });
     if (!resp.ok)
         throw new Error(`Steam API error (${resp.status})`);
-    return resp.json();
+    // Unknown games can come back as an empty/HTML body — treat as "no data"
+    // instead of throwing "Unexpected token ...".
+    const text = await resp.text();
+    try {
+        return JSON.parse(text);
+    }
+    catch (_err) {
+        return undefined;
+    }
 };
 // Official IUserReviewsService/GetAppReviews (works without an API key). Notes:
 // `languages` must be ["all"] (default is English only, which gives wrong
@@ -636,18 +644,16 @@ const SteamReviewsBadge = () => {
         return SP_REACT.createElement(SP_REACT.Fragment, null);
     if (isLaunching)
         return SP_REACT.createElement(SP_REACT.Fragment, null);
+    // No Steam reviews (not found, error, or zero reviews) -> render nothing at all.
+    if (!loading && (error || !data?.found || !data.all_reviews_total))
+        return SP_REACT.createElement(SP_REACT.Fragment, null);
     const renderScores = () => {
         if (loading)
             return (SP_REACT.createElement("div", { className: "steamrev-scores" },
                 SP_REACT.createElement("div", { className: "steamrev-score-row" },
                     SP_REACT.createElement("span", { className: "steamrev-row-label" }, "Loading\u2026"))));
-        if (error)
-            return (SP_REACT.createElement("div", { className: "steamrev-scores" },
-                SP_REACT.createElement("div", { className: "steamrev-score-row" },
-                    SP_REACT.createElement("span", { className: "steamrev-row-label" },
-                        "\u26A0\uFE0F ",
-                        error))));
-        if (!data?.found)
+        // No Steam reviews (not found, error, or zero reviews) -> display nothing.
+        if (error || !data?.found || !data.all_reviews_total)
             return null;
         const allCount = data.all_reviews_total?.toLocaleString() ?? "0";
         const recentCount = data.recent_reviews_total?.toLocaleString();
